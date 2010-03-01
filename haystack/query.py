@@ -42,7 +42,7 @@ class SearchQuerySet(object):
     def __repr__(self):
         data = list(self[:REPR_OUTPUT_SIZE])
         
-        if len(self) > REPR_OUTPUT_SIZE:
+        if data and len(self) > REPR_OUTPUT_SIZE:
             data[-1] = "...(remaining elements truncated)..."
         
         return repr(data)
