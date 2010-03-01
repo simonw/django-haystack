@@ -1,6 +1,6 @@
 import datetime
 from django.test import TestCase
-from haystack import indexes
+from haystack.indexes import *
 from haystack.exceptions import SearchFieldError
 from haystack.fields import CharField
 from haystack.sites import SearchSite, AlreadyRegistered, NotRegistered
@@ -11,7 +11,7 @@ class MockNotAModel(object):
     pass
 
 
-class FakeSearchIndex(indexes.BasicSearchIndex):
+class FakeSearchIndex(BasicSearchIndex):
     def update_object(self, instance, **kwargs):
         # Incorrect behavior but easy to test and all we care about is that we
         # make it here. We rely on the `SearchIndex` tests to ensure correct
@@ -25,8 +25,20 @@ class FakeSearchIndex(indexes.BasicSearchIndex):
         return True
 
 
-class InvalidSeachIndex(indexes.SearchIndex):
-    document = indexes.CharField(document=True)
+class InvalidSearchIndex(SearchIndex):
+    document = CharField(document=True)
+
+
+class ValidSearchIndex(SearchIndex):
+    text = CharField(document=True)
+    author = CharField(index_fieldname='name')
+    title = CharField()
+
+
+class AlternateValidSearchIndex(SearchIndex):
+    text = CharField(document=True)
+    author = CharField()
+    title = CharField()
 
 
 class SearchSiteTestCase(TestCase):
@@ -56,7 +68,7 @@ class SearchSiteTestCase(TestCase):
         self.assertRaises(NotRegistered, self.site.get_index, MockModel)
         
         self.site.register(MockModel)
-        self.assert_(isinstance(self.site.get_index(MockModel), indexes.BasicSearchIndex))
+        self.assert_(isinstance(self.site.get_index(MockModel), BasicSearchIndex))
     
     def test_get_indexes(self):
         self.assertEqual(self.site.get_indexes(), {})
@@ -93,8 +105,27 @@ class SearchSiteTestCase(TestCase):
         self.assertEqual(fields['text'].use_template, True)
         
         self.site.unregister(AnotherMockModel)
-        self.site.register(AnotherMockModel, InvalidSeachIndex)
+        self.site.register(AnotherMockModel, InvalidSearchIndex)
         self.assertRaises(SearchFieldError, self.site.all_searchfields)
+    
+    def test_get_index_fieldname(self):
+        self.assertEqual(self.site._field_mapping, None)
+        
+        self.site.register(MockModel, ValidSearchIndex)
+        self.site.register(AnotherMockModel)
+        field = self.site.get_index_fieldname('text')
+        self.assertEqual(self.site._field_mapping, {'text': 'text', 'title': 'title', 'author': 'name'})
+        self.assertEqual(self.site.get_index_fieldname('text'), 'text')
+        self.assertEqual(self.site.get_index_fieldname('author'), 'name')
+        self.assertEqual(self.site.get_index_fieldname('title'), 'title')
+        
+        # Reset the internal state to test the invalid case.
+        self.site._field_mapping = None
+        self.assertEqual(self.site._field_mapping, None)
+        
+        self.site.unregister(AnotherMockModel)
+        self.site.register(AnotherMockModel, AlternateValidSearchIndex)
+        self.assertRaises(SearchFieldError, self.site.get_index_fieldname, 'text')
     
     def test_update_object(self):
         self.site.register(MockModel, FakeSearchIndex)

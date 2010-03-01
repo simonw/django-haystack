@@ -22,15 +22,15 @@ Quick Start
 For the impatient::
 
     import datetime
-    from haystack import indexes
+    from haystack.indexes import *
     from haystack import site
     from myapp.models import Note
     
     
-    class NoteIndex(indexes.SearchIndex):
-        text = indexes.CharField(document=True, use_template=True)
-        author = indexes.CharField(model_attr='user')
-        pub_date = indexes.DateTimeField(model_attr='pub_date')
+    class NoteIndex(SearchIndex):
+        text = CharField(document=True, use_template=True)
+        author = CharField(model_attr='user')
+        pub_date = DateTimeField(model_attr='pub_date')
         
         def get_queryset(self):
             "Used when the entire index for model is updated."
@@ -69,6 +69,12 @@ of data, you provide a means to further narrow/filter search terms. This can
 be useful from either a UI perspective (a better advanced search form) or from a
 developer standpoint (section-dependent search, off-loading certain tasks to
 search, et cetera).
+
+.. warning::
+
+    Haystack reserves the following field names for internal use: ``id``,
+    ``django_ct``, ``django_id`` & ``content``. The ``name`` & ``type`` names
+    used to be reserved but no longer are.
 
 
 Significance Of ``document=True``
@@ -116,12 +122,12 @@ contents of that field, which avoids the database hit.:
 
 Within ``myapp/search_indexes.py``::
 
-    class NoteIndex(indexes.SearchIndex):
-        text = indexes.CharField(document=True, use_template=True)
-        author = indexes.CharField(model_attr='user')
-        pub_date = indexes.DateTimeField(model_attr='pub_date')
+    class NoteIndex(SearchIndex):
+        text = CharField(document=True, use_template=True)
+        author = CharField(model_attr='user')
+        pub_date = DateTimeField(model_attr='pub_date')
         # Define the additional field.
-        rendered = indexes.CharField(use_template=True, indexed=False)
+        rendered = CharField(use_template=True, indexed=False)
     
 Then, inside a template named ``search/indexes/myapp/note_rendered.txt``::
 
@@ -135,7 +141,7 @@ And finally, in ``search/search.html``::
     
     {% for result in page.object_list %}
         <div class="search_result">
-            {{ result.rendered }}
+            {{ result.rendered|safe }}
         </div>
     {% endfor %}
 
@@ -216,10 +222,10 @@ To keep with our existing example, one use case might be altering the name
 inside the ``author`` field to be "firstname lastname <email>". In this case,
 you might write the following code::
 
-    class NoteIndex(indexes.SearchIndex):
-        text = indexes.CharField(document=True, use_template=True)
-        author = indexes.CharField(model_attr='user')
-        pub_date = indexes.DateTimeField(model_attr='pub_date')
+    class NoteIndex(SearchIndex):
+        text = CharField(document=True, use_template=True)
+        author = CharField(model_attr='user')
+        pub_date = DateTimeField(model_attr='pub_date')
         
         def prepare_author(self, obj):
             return "%s <%s>" % (obj.user.get_full_name(), obj.user.email)
@@ -231,10 +237,10 @@ data may come from the field itself.
 Just like ``Form.clean_FOO``, the field's ``prepare`` runs before the
 ``prepare_FOO``, allowing you to access ``self.prepared_data``. For example::
 
-    class NoteIndex(indexes.SearchIndex):
-        text = indexes.CharField(document=True, use_template=True)
-        author = indexes.CharField(model_attr='user')
-        pub_date = indexes.DateTimeField(model_attr='pub_date')
+    class NoteIndex(SearchIndex):
+        text = CharField(document=True, use_template=True)
+        author = CharField(model_attr='user')
+        pub_date = DateTimeField(model_attr='pub_date')
         
         def prepare_author(self, obj):
             # Say we want last name first, the hard way.
@@ -249,11 +255,11 @@ Just like ``Form.clean_FOO``, the field's ``prepare`` runs before the
 This method is fully function with ``model_attr``, so if there's no convenient
 way to access the data you want, this is an excellent way to prepare it.
 
-    class NoteIndex(indexes.SearchIndex):
-        text = indexes.CharField(document=True, use_template=True)
-        author = indexes.CharField(model_attr='user')
-        categories = indexes.MultiValueField()
-        pub_date = indexes.DateTimeField(model_attr='pub_date')
+    class NoteIndex(SearchIndex):
+        text = CharField(document=True, use_template=True)
+        author = CharField(model_attr='user')
+        categories = MultiValueField()
+        pub_date = DateTimeField(model_attr='pub_date')
         
         def prepare_categories(self, obj):
             # Since we're using a M2M relationship with a complex lookup,
@@ -272,10 +278,10 @@ Overriding this method is useful if you need to collect more than one piece
 of data or need to incorporate additional data that is not well represented
 by a single ``SearchField``. An example might look like::
 
-    class NoteIndex(indexes.SearchIndex):
-        text = indexes.CharField(document=True, use_template=True)
-        author = indexes.CharField(model_attr='user')
-        pub_date = indexes.DateTimeField(model_attr='pub_date')
+    class NoteIndex(SearchIndex):
+        text = CharField(document=True, use_template=True)
+        author = CharField(model_attr='user')
+        pub_date = DateTimeField(model_attr='pub_date')
         
         def prepare(self, object):
             self.prepared_data = super(NoteIndex, self).prepare(object)
@@ -331,6 +337,23 @@ non-existent), merely an example of how to extend existing fields.
 .. note::
 
    This method is analagous to Django's ``Field.clean`` methods.
+
+
+Adding New Fields
+=================
+
+If you have an existing ``SearchIndex`` and you add a new field to it, Haystack
+will add this new data on any updates it sees after that point. However, this
+will not populate the existing data you already have.
+
+In order for the data to be picked up, you will need to run ``./manage.py
+rebuild_index``. This will cause all backends to rebuild the existing data
+already present in the quickest and most efficient way.
+
+.. note::
+
+    With the Solr backend, you'll also have to add to the appropriate
+    ``schema.xml`` for your configuration before running the ``rebuild_index``.
 
 
 ``Search Index``
@@ -446,10 +469,10 @@ By default, returns ``all()`` on the model's default manager.
 
 Example::
 
-    class NoteIndex(indexes.SearchIndex):
-        text = indexes.CharField(document=True, use_template=True)
-        author = indexes.CharField(model_attr='user')
-        pub_date = indexes.DateTimeField(model_attr='pub_date')
+    class NoteIndex(SearchIndex):
+        text = CharField(document=True, use_template=True)
+        author = CharField(model_attr='user')
+        pub_date = DateTimeField(model_attr='pub_date')
         
         def load_all_queryset(self):
             # Pull all objects related to the Note in search results.
@@ -516,22 +539,22 @@ Quick Start
 For the impatient::
 
     import datetime
-    from haystack import indexes
+    from haystack.indexes import *
     from haystack import site
     from myapp.models import Note
     
     # All Fields
-    class AllNoteIndex(indexes.ModelSearchIndex):
+    class AllNoteIndex(ModelSearchIndex):
         class Meta:
             pass
     
     # Blacklisted Fields
-    class LimitedNoteIndex(indexes.ModelSearchIndex):
+    class LimitedNoteIndex(ModelSearchIndex):
         class Meta:
             excludes = ['user']
     
     # Whitelisted Fields
-    class NoteIndex(indexes.ModelSearchIndex):
+    class NoteIndex(ModelSearchIndex):
         class Meta:
             fields = ['user', 'pub_date']
         

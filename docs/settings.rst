@@ -57,6 +57,7 @@ Valid options are::
 
     HAYSTACK_SEARCH_ENGINE = 'solr'
     HAYSTACK_SEARCH_ENGINE = 'whoosh'
+    HAYSTACK_SEARCH_ENGINE = 'xapian'
     HAYSTACK_SEARCH_ENGINE = 'dummy'
 
 No default is provided.
@@ -142,6 +143,39 @@ An example::
     HAYSTACK_WHOOSH_PATH = '/home/mysite/whoosh_index'
 
 No default is provided.
+
+
+``HAYSTACK_WHOOSH_STORAGE``
+===========================
+
+**Optional**
+
+This setting controls whether Whoosh uses either the standard file-based
+storage or the RAM-based storage.
+
+Note that the RAM-based storage is not permanent and disappears when the
+process is ended. This is mostly useful for testing.
+
+Examples::
+
+    HAYSTACK_WHOOSH_STORAGE = 'file'
+    HAYSTACK_WHOOSH_STORAGE = 'ram'
+
+The default is 'file'.
+
+
+``HAYSTACK_WHOOSH_POST_LIMIT``
+==============================
+
+**Optional**
+
+This setting controls how large of a document Whoosh will accept when writing.
+
+Examples::
+
+    HAYSTACK_WHOOSH_POST_LIMIT = 256 * 1024 * 1024
+
+The default is 128 * 1024 * 1024.
 
 
 ``HAYSTACK_XAPIAN_PATH``

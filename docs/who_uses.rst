@@ -41,6 +41,8 @@ Using: Xapian
 
 * http://www.trapeze.com/
 * http://www.windmobile.ca/
+* http://www.bonefishgrill.com/
+* http://www.canadiantire.ca/ (Portions of)
 
 
 Eldarion
@@ -120,3 +122,13 @@ For Reddit Gifts.
 Using: Whoosh
 
 * http://redditgifts.com/
+
+
+Pegasus News
+------------
+
+For general search.
+
+Using: Xapian
+
+* http://www.pegasusnews.com/

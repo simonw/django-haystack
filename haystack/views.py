@@ -26,10 +26,10 @@ class SearchView(object):
         
         if template:
             self.template = template
-
+    
     def __name__(self):
         return "SearchView"
-
+    
     def __call__(self, request):
         """
         Generates the actual response to the search.
@@ -44,14 +44,24 @@ class SearchView(object):
         
         return self.create_response()
     
-    def build_form(self):
+    def build_form(self, form_kwargs=None):
         """
         Instantiates the form the class should use to process the search query.
         """
-        if self.searchqueryset is None:
-            return self.form_class(self.request.GET, load_all=self.load_all)
+        data = None
+        kwargs = {
+            'load_all': self.load_all,
+        }
+        if form_kwargs:
+            kwargs.update(form_kwargs)
         
-        return self.form_class(self.request.GET, searchqueryset=self.searchqueryset, load_all=self.load_all)
+        if len(self.request.GET):
+            data = self.request.GET
+        
+        if self.searchqueryset is not None:
+            kwargs['searchqueryset'] = self.searchqueryset
+        
+        return self.form_class(data, **kwargs)
     
     def get_query(self):
         """
@@ -113,8 +123,13 @@ class SearchView(object):
             'paginator': paginator,
         }
         context.update(self.extra_context())
-        
         return render_to_response(self.template, context, context_instance=self.context_class(self.request))
+
+
+def search_view_factory(view_class=SearchView, *args, **kwargs):
+    def search_view(request):
+        return view_class(*args, **kwargs)(request)
+    return search_view
 
 
 class FacetedSearchView(SearchView):

@@ -16,12 +16,13 @@ MOCK_SEARCH_RESULTS = [MockSearchResult('core', 'MockModel', i, 1 - (i / 100.0))
 
 
 class MockSearchBackend(BaseSearchBackend):
-    def __init__(self):
+    def __init__(self, site=None):
         self.docs = {}
+        self.site = site
     
     def update(self, index, iterable, commit=True):
         for obj in iterable:
-            doc = index.prepare(obj)
+            doc = index.full_prepare(obj)
             self.docs[doc['id']] = doc
 
     def remove(self, obj, commit=True):

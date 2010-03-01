@@ -13,7 +13,11 @@ class SearchQuerySet(object):
     Supports chaining (a la QuerySet) to narrow the search.
     """
     def __init__(self, site=None, query=None):
-        self.query = query or backend.SearchQuery()
+        if query is not None:
+            self.query = query
+        else:
+            self.query = backend.SearchQuery(site=site)
+        
         self._result_cache = []
         self._result_count = None
         self._cache_full = False
@@ -319,11 +323,6 @@ class SearchQuerySet(object):
         clone._load_all = True
         return clone
     
-    def load_all_queryset(self, model, queryset):
-        # DRL_TODO: Remove before 1.0.
-        from haystack.exceptions import HaystackError
-        raise HaystackError("This method is deprecated. Please use the `RelatedSearchQuerySet` instead.")
-    
     def auto_query(self, query_string):
         """
         Performs a best guess constructing the search query.
@@ -445,11 +444,8 @@ class EmptySearchQuerySet(SearchQuerySet):
         clone._result_cache = []
         return clone
     
-    def __getitem__(self, k):
-        if isinstance(k, slice):
-            return []
-        else:
-            raise IndexError("'EmptySearchQuerySet' have no results to access.")
+    def _fill_cache(self, start, end):
+        return False
 
 
 class RelatedSearchQuerySet(SearchQuerySet):
